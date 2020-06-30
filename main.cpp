@@ -15,7 +15,7 @@ Serial pc(USBTX,USBRX); //tx,rx
 Serial uart(D1,D0); //tx,rx
 RawSerial xbee(D12, D11);
 DigitalIn pin3(D3);   // encoder
-DigitalInOut pin10(D10);   // encoder
+DigitalInOut pin10(D10);   // ping
 DigitalOut run_led(LED1); // red: run
 DigitalOut turn_led(LED2); // green: turn
 DigitalOut img_led(LED3); // blue: img
@@ -29,6 +29,7 @@ void send_thread();
 void mission2(void);
 void minst(void);
 
+// xbee
 void xbee_rx_interrupt(void);
 void xbee_rx(void);
 void reply_messange(char *xbee_reply, char *messange);
@@ -40,13 +41,15 @@ bool run = false;
 bool turn = false;
 bool img = false;
 bool ping = false;
+bool End = false;
 
 parallax_ping ping1(pin10);
 parallax_encoder encoder0(pin3, encoder_ticker);
 
 int main() {
-    //char xbee_reply[4];
     xbee.baud(9600);
+    xbee.printf("\r\n");
+    xbee.printf("start!!!\r\n");
     run_led = 1;
     turn_led = 1;
     img_led = 1;
@@ -60,14 +63,11 @@ int main() {
     wait_ms(2000);
     run_led = 0;
     run = true;
-    car.servo0.set_speed(-125);
-    car.servo1.set_speed(82);
-    //car.goStraight(100);
+    car.servo0.set_speed(-130);
+    car.servo1.set_speed(73);
     // 125cm
     wait_ms(7500);
-    //while(encoder0.get_cm() < 88) {};
     car.stop();
-    //encoder0.reset();
     run = false;
     run_led = 1;
     wait_ms(50);
@@ -76,12 +76,9 @@ int main() {
     wait_ms(1500);
     turn_led = 0;
     turn = true;
-    //car.turn(-55, -0.25);
     car.turn(-100, -0.3);
     wait_ms(2100);
-    //while(encoder0.get_cm() < 8) {};
     car.stop();
-    //encoder0.reset();
     turn_led = 1;
     turn = false;
     wait_ms(50);
@@ -122,15 +119,15 @@ int main() {
 /////////////////////
 
     // go straight to park
-    wait_ms(1000);
+    xbee.printf("\r\n");
+    xbee.printf("mission1\r\n");
+    wait_ms(2000);
     run = true;
     run_led = 0;
     car.servo0.set_speed(-130);
-    car.servo1.set_speed(82);
-    //car.goStraight(100);
+    car.servo1.set_speed(73);
     // 70 cm
-    //while(encoder0.get_cm()< 48) {};
-    wait_ms(4300);
+    wait_ms(4000);
     car.stop();
     wait_ms(50);
     run_led = 1;
@@ -138,6 +135,8 @@ int main() {
     
     // parking
     // back turn
+    xbee.printf("\r\n");
+    xbee.printf("parking\r\n");
     turn_led = 0;
     turn = true;
     wait_ms(500);
@@ -153,23 +152,21 @@ int main() {
     wait(1);
     run_led = 0;
     turn = true;
-    car.servo0.set_speed(125);
-    car.servo1.set_speed(-82);
-    wait_ms(2000);
-    //while(encoder0.get_cm() < 10) {};
-    //encoder0.reset();
+    car.servo0.set_speed(130);
+    car.servo1.set_speed(-73);
+    wait_ms(1500);
     car.stop();
     run_led = 1;
     turn = false;
     
     // leave parking
-    wait(1);
+    wait(0.5);
     run_led = 0;
     turn = true;
-    car.servo0.set_speed(-125);
-    car.servo1.set_speed(82);
+    car.servo0.set_speed(-130);
+    car.servo1.set_speed(73);
     // ? cm
-    wait_ms(1500);
+    wait_ms(1000);
     //while(encoder0.get_cm() < 10) {};
     //encoder0.reset();
     car.stop();
@@ -180,12 +177,9 @@ int main() {
     wait_ms(1000);
     turn_led = 0;
     turn = true;
-    //car.turn(-55, -0.25);
     car.turn(-100, -0.3);
     wait_ms(2100);
-    //while(encoder0.get_cm() < 8) {};
     car.stop();
-    //encoder0.reset();
     turn_led = 1;
     turn = false;
     wait_ms(50);
@@ -194,13 +188,8 @@ int main() {
     wait(1);
     run_led = 0;
     car.servo0.set_speed(-130);
-    car.servo1.set_speed(90);
-    wait_ms(1000);
-    // 50cm
-    //while(encoder0.get_cm() < 15) {
-        // ping
-    //};
-   // encoder0.reset();
+    car.servo1.set_speed(73);
+    wait_ms(1100);
     car.stop();
     wait_ms(50);
     run_led = 1;
@@ -210,22 +199,19 @@ int main() {
     turn = true;
     turn_led = 0;
     car.turn(100, -0.3);
-    wait_ms(2000);
-    //while(encoder0.get_cm() < 4.5) {};
-    //encoder0.reset();
+    wait_ms(1800);
     car.stop();
     turn_led = 1;
     turn = false;
     wait_ms(50);
 
     // mnist
+    xbee.printf("\r\n");
     img = true;
     img_led = 0;
     photo = true;
-    wait(7);
-    while(!recieve) {
-        wait(5);
-    }
+    wait(5);
+    while(!recieve) wait(2);
     img_led = 1;
     img = false;
 
@@ -235,22 +221,20 @@ int main() {
     turn = true;
     wait_ms(500);
     car.turn(-100, 0.3);
-    wait_ms(2000);
-    //while(encoder0.get_cm() < 20) {};
-    encoder0.reset();
+    wait_ms(1800);
     car.stop();
     turn_led = 1;
     turn = false;
     wait_ms(50);
 
     // go straight to leave
-    wait_ms(2000);
+    wait_ms(800);
     run_led = 0;
     run = true;
-    car.servo0.set_speed(-125);
+    car.servo0.set_speed(-130);
     car.servo1.set_speed(82);
     // 55cm
-    wait_ms(2500);
+    wait_ms(2100);
     car.stop();
     wait_ms(50);
     run_led = 1;
@@ -262,9 +246,7 @@ int main() {
     turn = true;
     wait_ms(900);
     car.turn(-100, 0.3);
-    wait_ms(2000);
-    //while(encoder0.get_cm() < 20) {};
-    encoder0.reset();
+    wait_ms(1800);
     car.stop();
     turn_led = 1;
     turn = false;
@@ -273,10 +255,10 @@ int main() {
     // straight
     wait_ms(1500);
     run_led = 0;
-    car.servo0.set_speed(-125);
-    car.servo1.set_speed(82);
+    car.servo0.set_speed(-130);
+    car.servo1.set_speed(73);
     // 100cm
-    wait_ms(7000);
+    wait_ms(6500);
     car.stop();
     wait_ms(50);
     run_led = 1; 
@@ -287,19 +269,21 @@ int main() {
     turn = true;
     wait_ms(1000);
     car.turn(-100, 0.3);
-    wait_ms(2000);
+    wait_ms(1800);
     car.stop();
     turn_led = 1;
     turn = false;
     wait_ms(50);
 
     // straight to 1
+    xbee.printf("\r\n");
+    xbee.printf("mission2");
     wait_ms(1500);
     run_led = 1;
-    car.servo0.set_speed(-125);
-    car.servo1.set_speed(82);
+    car.servo0.set_speed(-130);
+    car.servo1.set_speed(73);
     // 50cm
-    wait_ms(3000);
+    wait_ms(1500);
     car.stop();
     wait_ms(50);
     run_led = 0; 
@@ -310,7 +294,7 @@ int main() {
     turn = true;
     wait_ms(1000);
     car.turn(-100, 0.3);
-    wait_ms(2000);
+    wait_ms(1900);
     car.stop();
     turn_led = 1;
     turn = false;
@@ -326,9 +310,7 @@ int main() {
     turn = true;
     turn_led = 0;
     car.turn(100, 0.3);
-    wait_ms(2000);
-    //while(encoder0.get_cm() < 19) {};
-    encoder0.reset();
+    wait_ms(2200);
     car.stop();
     turn = false;
     turn_led = 1;
@@ -338,10 +320,10 @@ int main() {
     wait_ms(1500);
     run_led = 0;
     run = true;
-    car.servo0.set_speed(-125);
-    car.servo1.set_speed(82);
+    car.servo0.set_speed(-130);
+    car.servo1.set_speed(73);
     // 50cm
-    wait_ms(5000);
+    wait_ms(3500);
     car.stop();
     run_led = 1;
     run = false;    
@@ -353,7 +335,7 @@ int main() {
     turn = true;
     wait_ms(1000);
     car.turn(-100, 0.3);
-    wait_ms(2000);
+    wait_ms(1800);
     car.stop();
     turn_led = 1;
     turn = false;
@@ -363,13 +345,16 @@ int main() {
     wait_ms(1500);
     run_led = 0;
     run = true;
-    car.servo0.set_speed(-125);
-    car.servo1.set_speed(82);
+    car.servo0.set_speed(-130);
+    car.servo1.set_speed(73);
     // 125cm
-    wait_ms(8000);
+    wait_ms(8500);
     car.stop();
     run_led = 1;
     run = false;
+    End = true;
+    xbee.printf("\r\n");
+    xbee.printf("end!!!\r\n");
 
     xbee.attach(xbee_rx_interrupt, Serial::RxIrq);
 }
@@ -381,44 +366,21 @@ void minst(void)
 
 void log(void)
 {
- //   int  flag = 0;
-  //  char t[2];
-    while(1) {
+    while(!End) {
         if (run) {
-            xbee.printf("run\r\n");
-            //flag = 1;
-            //sprintf(t, "%1d", flag);
-            //xbee.printf("%d", 1);
-            //xbee.printf("%s", t);
-            wait(0.2);
+            xbee.printf("run ");
         }
         else if (turn) { 
-            xbee.printf("turn\r\n");
-            //flag = 2;
-            //sprintf(t, "%1d", flag);
-            //xbee.printf("%s", t);
-            wait(0.2);
+            xbee.printf("turn ");
         }
         else if (img) { 
-            xbee.printf("photo\r\n");
-            //flag = 3;
-            //sprintf(t, "%1d", flag);
-            //xbee.printf("%s", t);
-            wait(0.2);
+            xbee.printf("photo ");
         }
         else if (ping) {
-            xbee.printf("ping\r\n");
-            //flag = 4;
-            //sprintf(t, "%1d", flag);
-            //xbee.printf("%s", t);
-            wait(0.2);
+            xbee.printf("ping ");
         }
         else {
-            xbee.printf("stop\r\n");
-            //flag = 5;
-            //sprintf(t, "%1d", flag);
-            //xbee.printf("%s", t);
-            wait(0.2);
+            xbee.printf("stop ");
         }
         wait_ms(1000);
     }
@@ -446,7 +408,6 @@ void mission2(void)
         run_led = 1;
         wait_ms(100);
     }
-
     wait_ms(2000);
 }
 
@@ -464,7 +425,6 @@ void recieve_thread(){
 void send_thread(){
     while(1){
         wait(3);
-        //img_led = 0;
         if(photo){
             char s[10];
             sprintf(s,"img");
@@ -473,8 +433,6 @@ void send_thread(){
             photo = false;
             wait(0.5);
         }
-        //else pc.printf("not\r\n");
-        //pc.printf("%d\r\n", recieve);
     }
 }
 
